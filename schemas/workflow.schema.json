@@ -1,0 +1,92 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://flowcraft.dev/schemas/workflow.schema.json",
+  "title": "FlowCraft Workflow Definition",
+  "description": "Schema for FlowCraft visual workflow orchestration JSON format. Shared contract between frontend canvas and backend compiler.",
+  "type": "object",
+  "required": ["nodes", "edges"],
+  "properties": {
+    "nodes": {
+      "type": "array",
+      "description": "Workflow nodes defining agent actions and tool calls.",
+      "items": {
+        "type": "object",
+        "required": ["id", "type"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique node identifier within the workflow."
+          },
+          "type": {
+            "type": "string",
+            "enum": ["planner", "executor", "reviewer", "tool"],
+            "description": "Node type: planner (task decomposition), executor (step execution), reviewer (result evaluation), tool (MCP tool call)."
+          },
+          "tools": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "Tool names available to this node (for executor and reviewer types)."
+          },
+          "human_confirm": {
+            "type": "boolean",
+            "default": false,
+            "description": "If true, reviewer node requires human approval before proceeding."
+          },
+          "tool_name": {
+            "type": "string",
+            "description": "Specific tool to invoke (for tool node type)."
+          },
+          "model": {
+            "type": "string",
+            "description": "[TENTATIVE] Optional per-node LLM model override (e.g., 'gpt-4o', 'claude-3-opus'). Falls back to global config if null."
+          }
+        }
+      }
+    },
+    "edges": {
+      "type": "array",
+      "description": "Directed edges defining execution flow between nodes.",
+      "items": {
+        "type": "object",
+        "required": ["source", "target"],
+        "properties": {
+          "source": {
+            "type": "string",
+            "description": "Source node ID."
+          },
+          "target": {
+            "type": "string",
+            "description": "Target node ID. Use '__end__' to terminate execution."
+          },
+          "condition": {
+            "oneOf": [
+              {
+                "type": "object",
+                "description": "Simple comparison condition.",
+                "required": ["field", "op", "value"],
+                "properties": {
+                  "field": {"type": "string", "description": "State field to evaluate."},
+                  "op": {"type": "string", "enum": ["==", "!=", ">", "<", ">=", "<="]},
+                  "value": {"description": "Comparison value."}
+                }
+              },
+              {"type": "null"}
+            ]
+          },
+          "expression": {
+            "type": "string",
+            "description": "[TENTATIVE] Python lambda expression for advanced condition (executed in RestrictedPython sandbox)."
+          },
+          "loop": {
+            "type": "object",
+            "description": "Retry loop configuration (only valid for Reviewer→Executor back-edges).",
+            "properties": {
+              "type": {"type": "string", "const": "retry"},
+              "max_retries": {"type": "integer", "default": 3, "minimum": 1}
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+schema: spec-driven
+
+context: |
+  # FlowCraft - Open Source Visual Workflow Orchestration Platform
+  
+  ## Tech Stack
+  - Frontend: React 18+ (TypeScript), React Flow (canvas), Vite (bundler)
+  - Backend: Python 3.11+, FastAPI, LangGraph, LangChain
+  - Database: PostgreSQL (state persistence), Redis (WebSocket pub/sub)
+  - Infrastructure: Docker, Docker Compose
+  - LLM: LangChain ChatModel abstraction (provider-agnostic)
+  
+  ## Architecture
+  - Monorepo: pnpm (frontend) + uv (Python) workspaces
+  - 5-layer: Frontend → API Gateway → Task Scheduler → LangGraph Engine → MCP Tools
+  - MCP protocol for tool server integration (fully decoupled)
+  - Shared schema: `schemas/workflow.schema.json` as core contract
+  
+  ## Conventions
+  - Conventional Commits
+  - Code: Chinese comments allowed, English identifiers
+  - Documentation: Bilingual (Chinese primary, English for OSS)
+  
+  ## Domain
+  - Visual workflow orchestration for AI agent pipelines
+  - Human-in-the-loop with LangGraph interrupt/resume
+  - Open source, community-friendly
+
+rules:
+  proposal:
+    - Keep proposals under 500 words
+    - Always include a "Non-goals" section
+  design:
+    - Include ASCII architecture diagrams where helpful
+    - Document extension points explicitly
+  tasks:
+    - Break tasks into chunks of max 4 hours
+    - Mark parallelizable tasks with [P] prefix
+  specs:
+    - Use Given/When/Then for behavior specs
+    - Mark extensibility slots with [EXTENSIBLE] tag

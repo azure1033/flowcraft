@@ -1,0 +1,13 @@
+{
+  "nodes": [
+    {"id": "plan", "type": "planner"},
+    {"id": "exec", "type": "executor"},
+    {"id": "review", "type": "reviewer"}
+  ],
+  "edges": [
+    {"source": "plan", "target": "exec"},
+    {"source": "exec", "target": "review"},
+    {"source": "review", "target": "exec", "condition": {"field": "review_decision", "op": "==", "value": "rejected"}, "loop": {"type": "retry", "max_retries": 3}},
+    {"source": "review", "target": "__end__", "condition": {"field": "review_decision", "op": "==", "value": "approved"}}
+  ]
+}
