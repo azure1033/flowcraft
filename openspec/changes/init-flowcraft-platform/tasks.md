@@ -35,13 +35,13 @@
 
 ## 5. Backend — API & WebSocket Layer
 
-- [ ] 5.1 Implement REST router `/api/workflows` — CRUD with version auto-increment
-- [ ] 5.2 Implement REST router `/api/tasks` — create task from workflow, list, detail
-- [ ] 5.3 Implement `POST /api/tasks/{id}/human-decision` — accept decision, inject state, resume graph
-- [ ] 5.4 Implement `GET /api/tasks/{id}/audit` — aggregate node_executions + human_decisions
+- [x] 5.1 Implement REST router `/api/workflows` — CRUD with version auto-increment
+- [x] 5.2 Implement REST router `/api/tasks` — create task from workflow, list, detail
+- [x] 5.3 Implement `POST /api/tasks/{id}/human-decision` — accept decision, inject state, resume graph
+- [x] 5.4 Implement `GET /api/tasks/{id}/audit` — aggregate node_executions + human_decisions
 - [ ] 5.5 Implement WebSocket handler `ws/tasks/{task_id}` — subscribe to Redis channel, forward events per design D8
-- [ ] 5.6 Implement API Key middleware — validate X-API-Key header against `.env` config
-- [ ] 5.7 Add request/response Pydantic models and auto-generate OpenAPI docs
+- [x] 5.6 Implement API Key middleware — validate X-API-Key header against `.env` config
+- [x] 5.7 Add request/response Pydantic models and auto-generate OpenAPI docs
 
 ## 6. Backend — Human-in-the-Loop Flow
 

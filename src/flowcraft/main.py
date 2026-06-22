@@ -7,26 +7,31 @@ Usage:
     Requires: OPENAI_API_KEY in .env file.
 """
 
+# pyright: reportExplicitAny=false
+# pyright: reportAny=false
+# pyright: reportMissingTypeStubs=false
+# pyright: reportUnknownMemberType=false
+
 import json
 import sys
 import os
-from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
 
-load_dotenv()
+_ = load_dotenv()
 
 from flowcraft.compiler import GraphCompiler
 from flowcraft.state import AgentState
 
 
-def load_workflow(path: str) -> dict:
+def load_workflow(path: str) -> dict[str, Any]:
     """Load workflow JSON from file path."""
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
-def run_workflow(workflow: dict, task: str) -> dict:
+def run_workflow(workflow: dict[str, Any], task: str) -> dict[str, Any]:
     """Compile and execute a workflow with the given task.
 
     Args:
@@ -36,13 +41,15 @@ def run_workflow(workflow: dict, task: str) -> dict:
     Returns:
         Final AgentState after execution.
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  FlowCraft MVP — Workflow Execution Engine")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
     print(f"  Task: {task}")
-    print(f"  Nodes: {[n['id'] for n in workflow['nodes']]}")
-    print(f"  Edges: {[f\"{e['source']}→{e['target']}\" for e in workflow['edges']]}")
-    print(f"{'='*60}\n")
+    node_ids = [n["id"] for n in workflow["nodes"]]
+    edge_pairs = [f"{e['source']}->{e['target']}" for e in workflow["edges"]]
+    print(f"  Nodes: {node_ids}")
+    print(f"  Edges: {edge_pairs}")
+    print(f"{'=' * 60}\n")
 
     compiler = GraphCompiler()
 
@@ -71,11 +78,11 @@ def run_workflow(workflow: dict, task: str) -> dict:
     return result
 
 
-def print_result(result: dict):
+def print_result(result: dict[str, Any]) -> None:
     """Pretty-print execution result."""
-    print(f"\n{'='*60}")
+    print(f"\n{'=' * 60}")
     print(f"  Execution Complete")
-    print(f"{'='*60}")
+    print(f"{'=' * 60}")
 
     plan = result.get("plan", {})
     steps = plan.get("steps", [])
@@ -92,15 +99,18 @@ def print_result(result: dict):
         for line in exec_output.strip().split("\n"):
             print(f"    {line}")
 
-    print(f"{'='*60}\n")
+    print(f"{'=' * 60}\n")
 
 
-def main():
+def main() -> None:
+    # Force UTF-8 output on Windows (default GBK can't handle ✓/✗)
+    sys.stdout.reconfigure(encoding="utf-8")
+
     # Load workflow
     if len(sys.argv) > 1:
         workflow_path = sys.argv[1]
     else:
-        # Default demo: plan → exec → review → (condition back to exec or end)
+        # Default demo: plan -> exec -> review -> (condition back to exec or end)
         workflow_path = os.path.join(
             os.path.dirname(__file__), "..", "..", "examples", "demo_workflow.json"
         )
@@ -124,6 +134,7 @@ def main():
     except Exception as e:
         print(f"\n✗ Execution failed: {e}")
         import traceback
+
         traceback.print_exc()
         sys.exit(1)
 
