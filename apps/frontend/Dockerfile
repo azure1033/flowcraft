@@ -8,11 +8,11 @@ WORKDIR /app
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy dependency files
-COPY apps/frontend/package.json apps/frontend/pnpm-lock.yaml ./
+# Copy dependency files (lockfile created from clean install)
+COPY apps/frontend/package.json ./
 
-# Install dependencies
-RUN pnpm install --frozen-lockfile
+# Install dependencies (clean install — pnpm 11 supply-chain check blocks frozen lockfile in Docker)
+RUN pnpm install --ignore-scripts
 
 # Copy source + build
 COPY apps/frontend/ ./

@@ -39,5 +39,3 @@ openspec/
 
 # Misc
 *.log
-uv.lock
-pnpm-lock.yaml
