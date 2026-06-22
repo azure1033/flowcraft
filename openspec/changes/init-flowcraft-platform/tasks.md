@@ -85,15 +85,15 @@
 - [ ] 10.2 Implement WebSocket client hook — connect to `ws/tasks/{id}`, dispatch events to Zustand store
 - [x] 10.3 Implement workflow CRUD UI — template list, create, edit, delete
 - [x] 10.4 Implement task dashboard — create task, view status, task history list
-- [ ] 10.5 Implement human decision dialog — review context panel, approve/reject buttons, feedback textarea
-- [ ] 10.6 Implement real-time execution display — node status overlay on canvas (pending/running/done/error icons)
+- [x] 10.5 Implement human decision dialog — review context panel, approve/reject buttons, feedback textarea
+- [x] 10.6 Implement real-time execution display — node status overlay on canvas (pending/running/done/error icons)
 
 ## 11. Observability & Audit
 
 - [ ] 11.1 Implement node execution event emission — push node_start/node_complete/node_error to Redis channel
-- [ ] 11.2 Implement NodeExecution repository — persist each node's execution record (input/output/duration/status)
-- [ ] 11.3 Implement HumanDecision repository — persist each human decision record
-- [ ] 11.4 Implement audit log API aggregation — join task + node_executions + human_decisions
+- [x] 11.2 Implement NodeExecution repository — persist each node's execution record (input/output/duration/status)
+- [x] 11.3 Implement HumanDecision repository — persist each human decision record
+- [x] 11.4 Implement audit log API aggregation — join task + node_executions + human_decisions
 - [ ] 11.5 Implement frontend audit log view — task detail page with timeline and node execution list
 
 ## 12. CLI & Deployment

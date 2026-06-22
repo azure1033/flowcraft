@@ -4,6 +4,8 @@ import Sidebar from './components/Sidebar';
 import Toolbar from './components/Toolbar';
 import PropertiesPanel from './components/PropertiesPanel';
 import WorkflowList from './components/WorkflowList';
+import HumanDecisionDialog from './components/HumanDecisionDialog';
+import ExecutionOverlay from './components/ExecutionOverlay';
 import { useWorkflowStore } from './stores/workflowStore';
 
 export default function App() {
@@ -23,9 +25,12 @@ export default function App() {
         <Sidebar />
         <div style={{ flex: 1, position: 'relative' }}>
           <Canvas />
+          <ExecutionOverlay />
         </div>
         <PropertiesPanel />
       </div>
+
+      <HumanDecisionDialog />
 
       {/* Workflow list toggle */}
       <button
