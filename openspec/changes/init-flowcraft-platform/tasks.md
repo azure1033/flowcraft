@@ -102,8 +102,8 @@
 - [ ] 12.2 Implement `agent-flow init` — scaffold project directory with `.env.example`, `docker-compose.yml`, `examples/`
 - [ ] 12.3 Implement `agent-flow dev` — start frontend Vite + backend FastAPI + PostgreSQL/Redis containers, dependency check
 - [ ] 12.4 Implement `agent-flow test <workflow.json>` — load workflow, execute in simulated mode, print results
-- [ ] 12.5 Create `docker-compose.yml` — orchestrate all 6 services (API, engine, PostgreSQL, Redis, search-server, code-sandbox, nginx)
-- [ ] 12.6 Create Nginx config — serve frontend static files, proxy `/api` and `/ws` to backend
+- [x] 12.5 Create `docker-compose.yml` — orchestrate all 6 services (API, engine, PostgreSQL, Redis, search-server, code-sandbox, nginx)
+- [x] 12.6 Create Nginx config — serve frontend static files, proxy `/api` and `/ws` to backend
 
 ## 13. Examples & Documentation
 

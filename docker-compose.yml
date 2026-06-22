@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  # ── Backend API Server ──
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: flowcraft-backend
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - HOST=0.0.0.0
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    networks:
+      - flowcraft-net
+    # For future PostgreSQL/Redis:
+    # depends_on:
+    #   postgres:
+    #     condition: service_healthy
+    #   redis:
+    #     condition: service_healthy
+
+  # ── Frontend (Nginx + Static Files) ──
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+    container_name: flowcraft-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - flowcraft-net
+
+  # ── PostgreSQL (Phase 2 — commented out for MVP) ──
+  # postgres:
+  #   image: postgres:16-alpine
+  #   container_name: flowcraft-postgres
+  #   ports:
+  #     - "5432:5432"
+  #   environment:
+  #     POSTGRES_USER: flowcraft
+  #     POSTGRES_PASSWORD: flowcraft
+  #     POSTGRES_DB: flowcraft
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U flowcraft"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - flowcraft-net
+
+  # ── Redis (Phase 2 — commented out for MVP) ──
+  # redis:
+  #   image: redis:7-alpine
+  #   container_name: flowcraft-redis
+  #   ports:
+  #     - "6379:6379"
+  #   healthcheck:
+  #     test: ["CMD", "redis-cli", "ping"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #   networks:
+  #     - flowcraft-net
+
+networks:
+  flowcraft-net:
+    driver: bridge
+
+# volumes:
+#   postgres_data:

@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# Node
+node_modules/
+apps/frontend/dist/
+apps/frontend/node_modules/
+
+# Environment
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Tests + docs
+tests/
+*.md
+!README.md
+
+# OpenSpec
+openspec/
+.opencode/
+
+# Misc
+*.log
+uv.lock
+pnpm-lock.yaml
