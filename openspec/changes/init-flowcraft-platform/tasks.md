@@ -64,27 +64,27 @@
 
 ## 8. Frontend — Project Setup & Canvas
 
-- [ ] 8.1 Initialize React + TypeScript + Vite project in `apps/frontend/`, add deps (reactflow, zustand, socket.io-client)
-- [ ] 8.2 Generate TypeScript types from `schemas/workflow.schema.json`
-- [ ] 8.3 Implement Zustand store — canvas state (nodes, edges), workflow metadata, WebSocket connection state
-- [ ] 8.4 Implement React Flow canvas component with drag-from-sidebar support
-- [ ] 8.5 Implement custom node components for all 5 types (Planner, Executor, Reviewer, Tool, Conditional Edge) with type-specific visual styling
-- [ ] 8.6 Implement node sidebar panel — draggable node list with type icons and labels
+- [x] 8.1 Initialize React + TypeScript + Vite project in `apps/frontend/`, add deps (reactflow, zustand, socket.io-client)
+- [x] 8.2 Generate TypeScript types from `schemas/workflow.schema.json`
+- [x] 8.3 Implement Zustand store — canvas state (nodes, edges), workflow metadata, WebSocket connection state
+- [x] 8.4 Implement React Flow canvas component with drag-from-sidebar support
+- [x] 8.5 Implement custom node components for all 5 types (Planner, Executor, Reviewer, Tool, Conditional Edge) with type-specific visual styling
+- [x] 8.6 Implement node sidebar panel — draggable node list with type icons and labels
 
 ## 9. Frontend — Editor Interaction
 
-- [ ] 9.1 Implement node properties panel — context-sensitive configuration per node type (tools binding, human_confirm toggle, tool_name selection)
+- [x] 9.1 Implement node properties panel — context-sensitive configuration per node type (tools binding, human_confirm toggle, tool_name selection)
 - [ ] 9.2 Implement conditional edge editor — simple mode (field/op/value dropdowns) and advanced mode (Python lambda textarea)
-- [ ] 9.3 Implement canvas serialization — export workflow JSON
-- [ ] 9.4 Implement canvas deserialization — import/load workflow JSON, reconstruct nodes and edges
-- [ ] 9.5 Implement toolbar — Save, Export JSON, Import JSON, Run, Undo/Redo (Ctrl+Z/Y)
+- [x] 9.3 Implement canvas serialization — export workflow JSON
+- [x] 9.4 Implement canvas deserialization — import/load workflow JSON, reconstruct nodes and edges
+- [x] 9.5 Implement toolbar — Save, Export JSON, Import JSON, Run, Undo/Redo (Ctrl+Z/Y)
 
 ## 10. Frontend — API & Real-Time Integration
 
-- [ ] 10.1 Implement API client service — wrapped fetch/axios for all REST endpoints
+- [x] 10.1 Implement API client service — wrapped fetch/axios for all REST endpoints
 - [ ] 10.2 Implement WebSocket client hook — connect to `ws/tasks/{id}`, dispatch events to Zustand store
-- [ ] 10.3 Implement workflow CRUD UI — template list, create, edit, delete
-- [ ] 10.4 Implement task dashboard — create task, view status, task history list
+- [x] 10.3 Implement workflow CRUD UI — template list, create, edit, delete
+- [x] 10.4 Implement task dashboard — create task, view status, task history list
 - [ ] 10.5 Implement human decision dialog — review context panel, approve/reject buttons, feedback textarea
 - [ ] 10.6 Implement real-time execution display — node status overlay on canvas (pending/running/done/error icons)
 
