@@ -1,152 +1,139 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
-  ReactFlow,
-  Controls,
-  Background,
-  MiniMap,
-  type Node,
-  type Edge,
-  type Connection,
-  type OnConnect,
-  addEdge,
-  useReactFlow,
-  ReactFlowProvider,
-  BackgroundVariant,
+  ReactFlow, Controls, Background, MiniMap,
+  useNodesState, useEdgesState,
+  type Node, type Edge, type Connection,
+  useReactFlow, ReactFlowProvider, BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { nodeTypes } from './nodes';
-import type { NodeType, WorkflowEdge, ConditionOp } from '../types/workflow';
+import type { NodeType, ConditionOp } from '../types/workflow';
 import { useWorkflowStore } from '../stores/workflowStore';
 
-const rfNode = (id: string, type: NodeType, x: number, y: number, data?: Record<string, unknown>): Node => ({
-  id,
-  type,
-  position: { x, y },
-  data: data || {},
-});
+// ── Helpers ──
 
-const rfEdge = (id: string, source: string, target: string, label?: string, animated?: boolean): Edge => ({
-  id,
-  source,
-  target,
-  label,
-  animated,
-  style: label ? { stroke: '#ff9800', strokeDasharray: '5,5' } : { stroke: '#b1b1b7' },
-  markerEnd: { type: 'arrowclosed' as const, color: label ? '#ff9800' : '#b1b1b7' },
-});
+let _idCounter = 0;
+const genId = (prefix: string) => `${prefix}_${Date.now()}_${++_idCounter}`;
+
+function addToBoth(type: NodeType, pos: { x: number; y: number }) {
+  const id = genId(type);
+  const wfNode = { id, type };
+  const rfNode: Node = { id, type, position: pos, data: {} };
+
+  // Trigger React Flow update via custom event (avoids prop drilling)
+  window.dispatchEvent(new CustomEvent('flowcraft:add-node', { detail: { rfNode, wfNode } }));
+}
 
 function CanvasInner() {
-  const reactFlowInstance = useReactFlow();
+  const rf = useReactFlow();
+  const [rfNodes, setRfNodes, onNodesChange] = useNodesState<Node>([]);
+  const [rfEdges, setRfEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
   const store = useWorkflowStore();
-  const {
-    nodes: wfNodes,
-    edges: wfEdges,
-    addNode,
-    addEdge: storeAddEdge,
-    selectNode,
-  } = store;
+  const { nodes: wfNodes, edges: wfEdges, selectNode } = store;
 
-  // Convert store nodes/edges → React Flow format
-  const rfNodes: Node[] = wfNodes.map((n) =>
-    rfNode(n.id, n.type, 0, 0, {
-      tools: n.tools,
-      human_confirm: n.human_confirm,
-      tool_name: n.tool_name,
-    })
-  );
-  const rfEdges: Edge[] = wfEdges.map((e, i) => {
-    const isCondition = !!e.condition;
-    const label = isCondition
-      ? `${e.condition!.field} ${e.condition!.op} ${String(e.condition!.value)}`
-      : undefined;
-    return rfEdge(`e${i}`, e.source, e.target, label, isCondition);
-  });
+  // Track if we loaded a workflow to trigger full sync once
+  const loadedId = useRef<string | null>(null);
 
-  const onConnect: OnConnect = useCallback(
-    (connection: Connection) => {
-      if (!connection.source || !connection.target) return;
-      const edge: WorkflowEdge = {
-        source: connection.source,
-        target: connection.target,
-        condition: null,
-      };
-      storeAddEdge(edge);
-    },
-    [storeAddEdge]
-  );
+  // Full reset when workflow loaded from API / import
+  useEffect(() => {
+    const wid = store.workflowId;
+    if (wid && wid !== loadedId.current && wfNodes.length > 0) {
+      loadedId.current = wid;
+      const spacing = 220;
+      const startX = 250;
+      const startY = 150;
+      const newNodes: Node[] = wfNodes.map((n, i) => ({
+        id: n.id, type: n.type,
+        position: { x: startX + i * spacing, y: startY + (i % 2) * 100 },
+        data: { tools: n.tools, human_confirm: n.human_confirm, tool_name: n.tool_name },
+      }));
+      const newEdges: Edge[] = wfEdges.map((e, i) => {
+        const c = e.condition;
+        return {
+          id: `e${i}`, source: e.source, target: e.target,
+          label: c ? `${c.field} ${c.op} ${String(c.value)}` : undefined,
+          animated: !!c,
+          style: c ? { stroke: '#ff9800', strokeDasharray: '5,5' } : { stroke: '#b1b1b7' },
+          markerEnd: { type: 'arrowclosed' as const, color: c ? '#ff9800' : '#b1b1b7' },
+        };
+      });
+      setTimeout(() => { setRfNodes(newNodes); setRfEdges(newEdges); }, 0);
+    }
+  }, [store.workflowId, wfNodes, wfEdges, setRfNodes, setRfEdges]);
 
-  const onDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    event.dataTransfer.dropEffect = 'move';
+  // Listen for add-node events from Sidebar click
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { rfNode, wfNode } = (e as CustomEvent).detail;
+      setRfNodes((nds) => [...nds, rfNode]);
+      useWorkflowStore.setState((s) => ({
+        nodes: [...s.nodes, wfNode],
+        isDirty: true,
+      }));
+    };
+    window.addEventListener('flowcraft:add-node', handler);
+    return () => window.removeEventListener('flowcraft:add-node', handler);
+  }, [setRfNodes]);
+
+  // ── Drag from sidebar ──
+  const onDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }, []);
+
+  const onDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const type = e.dataTransfer.getData('application/reactflow-type') as NodeType;
+    if (!type) return;
+    const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+    addToBoth(type, pos);
+  }, [rf]);
+
+  // ── Connect ──
+  const onConnect = useCallback((c: Connection) => {
+    if (!c.source || !c.target) return;
+    useWorkflowStore.setState((s) => ({
+      edges: [...s.edges, { source: c.source, target: c.target, condition: null }],
+      isDirty: true,
+    }));
   }, []);
 
-  const onDrop = useCallback(
-    (event: React.DragEvent) => {
-      event.preventDefault();
-      const type = event.dataTransfer.getData('application/reactflow-type') as NodeType;
-      if (!type) return;
-
-      const position = reactFlowInstance.screenToFlowPosition({
-        x: event.clientX,
-        y: event.clientY,
-      });
-      addNode(type, position);
-    },
-    [reactFlowInstance, addNode]
-  );
-
-  const onNodeClick = useCallback(
-    (_: React.MouseEvent, node: Node) => selectNode(node.id),
-    [selectNode]
-  );
-
+  // ── Clicks ──
+  const onNodeClick = useCallback((_: any, n: Node) => selectNode(n.id), [selectNode]);
   const onPaneClick = useCallback(() => selectNode(null), [selectNode]);
 
-  const onEdgeClick = useCallback(
-    (_: React.MouseEvent, edge: Edge) => {
-      const field = prompt("Condition field (e.g. review_decision):", "");
-      if (!field) return;
-      const op = prompt("Operator (==, !=, >, <, >=, <=):", "==");
-      if (!op) return;
-      const val = prompt("Value:", "approved");
-      if (val === null) return;
+  const onEdgeClick = useCallback((_: any, edge: Edge) => {
+    const field = prompt('Condition field (e.g. review_decision):', '');
+    if (!field) return;
+    const op = prompt('Operator (==, !=, >, <, >=, <=):', '==');
+    if (!op) return;
+    const valRaw = prompt('Value:', 'approved');
+    if (valRaw === null) return;
+    const val: any = valRaw === 'true' ? true : valRaw === 'false' ? false : isNaN(+valRaw) ? valRaw : +valRaw;
 
-      const boolVal = val === "true" ? true : val === "false" ? false : isNaN(Number(val)) ? val : Number(val);
-
-      store.updateEdge(edge.source, edge.target, {
-        condition: { field, op: op as ConditionOp, value: boolVal },
-      } as Partial<WorkflowEdge>);
-    },
-    [store]
-  );
+    useWorkflowStore.setState((s) => ({
+      edges: s.edges.map((e) =>
+        e.source === edge.source && e.target === edge.target
+          ? { ...e, condition: { field, op: op as ConditionOp, value: val } }
+          : e
+      ),
+      isDirty: true,
+    }));
+  }, []);
 
   return (
     <ReactFlow
-      nodes={rfNodes}
-      edges={rfEdges}
-      onConnect={onConnect}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
-      onNodeClick={onNodeClick}
-      onEdgeClick={onEdgeClick}
-      onPaneClick={onPaneClick}
-      nodeTypes={nodeTypes}
-      fitView
+      nodes={rfNodes} edges={rfEdges}
+      onNodesChange={onNodesChange} onEdgesChange={onEdgesChange}
+      onConnect={onConnect} onDragOver={onDragOver} onDrop={onDrop}
+      onNodeClick={onNodeClick} onEdgeClick={onEdgeClick} onPaneClick={onPaneClick}
+      nodeTypes={nodeTypes} fitView
+      deleteKeyCode={['Backspace', 'Delete']}
       style={{ background: '#fcfcfc' }}
     >
       <Controls />
       <Background variant={BackgroundVariant.Dots} gap={12} size={1} color="#e0e0e0" />
       <MiniMap
-        nodeColor={(n) => {
-          const colors: Record<string, string> = {
-            planner: '#81c784',
-            executor: '#7986cb',
-            reviewer: '#ffb74d',
-            tool: '#ce93d8',
-          };
-          return colors[n.type || ''] || '#ddd';
-        }}
+        nodeColor={(n) => ({ planner: '#81c784', executor: '#7986cb', reviewer: '#ffb74d', tool: '#ce93d8' }[n.type || ''] || '#ddd')}
         style={{ background: '#f5f5f5' }}
       />
     </ReactFlow>
@@ -154,9 +141,8 @@ function CanvasInner() {
 }
 
 export default function Canvas() {
-  return (
-    <ReactFlowProvider>
-      <CanvasInner />
-    </ReactFlowProvider>
-  );
+  return <ReactFlowProvider><CanvasInner /></ReactFlowProvider>;
 }
+
+// Export for Sidebar
+export { addToBoth };
