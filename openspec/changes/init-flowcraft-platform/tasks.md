@@ -9,11 +9,11 @@
 
 ## 2. Backend — Data Models & Persistence
 
-- [ ] 2.1 Initialize FastAPI project in `apps/backend/` with uv, add dependencies (fastapi, sqlalchemy, asyncpg, langgraph, langchain)
-- [ ] 2.2 Implement SQLAlchemy ORM models: `WorkflowDefinition`, `TaskInstance`, `NodeExecution`, `HumanDecision` per design D4
-- [ ] 2.3 Implement Alembic migrations for initial schema
-- [ ] 2.4 Implement PostgreSQL checkpointer adapter (LangGraph PostgresSaver integration)
-- [ ] 2.5 Implement Redis connection manager for WebSocket pub/sub
+- [x] 2.1 Initialize FastAPI project in `apps/backend/` with uv, add dependencies (fastapi, sqlalchemy, asyncpg, langgraph, langchain)
+- [x] 2.2 Implement SQLAlchemy ORM models: `WorkflowDefinition`, `TaskInstance`, `NodeExecution`, `HumanDecision` per design D4
+- [x] 2.3 Implement Alembic migrations for initial schema
+- [x] 2.4 Implement PostgreSQL checkpointer adapter (LangGraph PostgresSaver integration)
+- [x] 2.5 Implement Redis connection manager for WebSocket pub/sub
 
 ## 3. Backend — Agent Nodes & State
 
@@ -82,7 +82,7 @@
 ## 10. Frontend — API & Real-Time Integration
 
 - [x] 10.1 Implement API client service — wrapped fetch/axios for all REST endpoints
-- [ ] 10.2 Implement WebSocket client hook — connect to `ws/tasks/{id}`, dispatch events to Zustand store
+- [x] 10.2 Implement WebSocket client hook — connect to `ws/tasks/{id}`, dispatch events to Zustand store
 - [x] 10.3 Implement workflow CRUD UI — template list, create, edit, delete
 - [x] 10.4 Implement task dashboard — create task, view status, task history list
 - [x] 10.5 Implement human decision dialog — review context panel, approve/reject buttons, feedback textarea
@@ -90,11 +90,11 @@
 
 ## 11. Observability & Audit
 
-- [ ] 11.1 Implement node execution event emission — push node_start/node_complete/node_error to Redis channel
+- [x] 11.1 Implement node execution event emission — push node_start/node_complete/node_error to Redis channel
 - [x] 11.2 Implement NodeExecution repository — persist each node's execution record (input/output/duration/status)
 - [x] 11.3 Implement HumanDecision repository — persist each human decision record
 - [x] 11.4 Implement audit log API aggregation — join task + node_executions + human_decisions
-- [ ] 11.5 Implement frontend audit log view — task detail page with timeline and node execution list
+- [x] 11.5 Implement frontend audit log view — task detail page with timeline and node execution list
 
 ## 12. CLI & Deployment
 
@@ -109,18 +109,18 @@
 
 - [x] 13.1 [P] Create example workflow \"Daily AI News Briefing\" — Planner → Executor(search) → Reviewer
 - [x] 13.2 [P] Create example workflow "Code Review Assistant" — Planner → Executor(code_sandbox) → Reviewer(human_confirm)
-- [ ] 13.3 Write OpenAPI / Swagger API documentation annotations on all endpoints
-- [ ] 13.4 Write MCP tool server development guide
-- [ ] 13.5 Write user guide — workflow editor usage, task execution, human review flow
+- [x] 13.3 Write OpenAPI / Swagger API documentation annotations on all endpoints
+- [x] 13.4 Write MCP tool server development guide
+- [x] 13.5 Write user guide — workflow editor usage, task execution, human review flow
 
 ## 14. Integration Testing & Polish
 
-- [ ] 14.1 Integration test: full end-to-end flow — create workflow via API → execute → review → human decision → audit
-- [ ] 14.2 Integration test: WebSocket event stream — connect, verify all event types received in correct order
-- [ ] 14.3 Integration test: simulated review mode — verify auto-decision completes full cycle
-- [ ] 14.4 Integration test: retry loop with max_retries enforcement
-- [ ] 14.5 Integration test: MCP tool invocation — agent uses search tool, verifies result
-- [ ] 14.6 [P] Frontend smoke test — canvas renders, drag nodes, connect edges, export JSON
-- [ ] 14.7 [P] CLI smoke test — `agent-flow init`, `agent-flow dev`, `agent-flow test`
-- [ ] 14.8 Performance test: workflow with 20+ nodes, verify canvas responsiveness
-- [ ] 14.9 Security test: RestrictedPython sandbox bypass attempts, verify blocked
+- [x] 14.1 Integration test: full end-to-end flow — create workflow via API → execute → review → human decision → audit
+- [x] 14.2 Integration test: WebSocket event stream — connect, verify all event types received in correct order
+- [x] 14.3 Integration test: simulated review mode — verify auto-decision completes full cycle
+- [x] 14.4 Integration test: retry loop with max_retries enforcement
+- [x] 14.5 Integration test: MCP tool invocation — agent uses search tool, verifies result
+- [x] 14.6 [P] Frontend smoke test — canvas renders, drag nodes, connect edges, export JSON
+- [x] 14.7 [P] CLI smoke test — `agent-flow init`, `agent-flow dev`, `agent-flow test`
+- [x] 14.8 Performance test: workflow with 20+ nodes, verify canvas responsiveness
+- [x] 14.9 Security test: RestrictedPython sandbox bypass attempts, verify blocked
