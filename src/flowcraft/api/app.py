@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .workflows import router as workflows_router
 from .tasks import router as tasks_router
+from .ws import router as ws_router
 from .schemas import HealthResponse
 from .store import store
 
@@ -82,6 +83,7 @@ app.add_middleware(
 # Register routers
 app.include_router(workflows_router)
 app.include_router(tasks_router)
+app.include_router(ws_router)
 
 
 @app.get("/api/health", response_model=HealthResponse, tags=["health"])

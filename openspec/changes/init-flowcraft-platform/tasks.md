@@ -21,16 +21,16 @@
 - [x] 3.2 Implement `planner_agent` node — takes user input, outputs task decomposition `plan` dict via LangChain ChatModel
 - [x] 3.3 Implement `executor_agent` node — executes current step, calls tools via LangChain Tool binding, outputs `exec_output`
 - [x] 3.4 Implement `review_agent` node — evaluates exec_output against original task, outputs `review_decision` (approved/rejected)
-- [ ] 3.5 Implement `tool_executor` node factory — wraps MCP tool as LangChain Tool for agent invocation
+- [x] 3.5 Implement `tool_executor` node factory — wraps MCP tool as LangChain Tool for agent invocation
 
 ## 4. Backend — GraphCompiler & Execution Engine
 
 - [x] 4.1 Implement `GraphCompiler` class — parse JSON nodes into `builder.add_node()` calls per design D5
 - [x] 4.2 Implement edge compilation — `add_edge` for direct edges, `add_conditional_edges` for condition edges
 - [x] 4.3 Implement simple condition compilation — compile `{field, op, value}` into comparison lambda
-- [ ] 4.4 Implement advanced condition compilation — RestrictedPython sandbox with 5s timeout + memory limit
+- [x] 4.4 Implement advanced condition compilation — RestrictedPython sandbox with 5s timeout + memory limit
 - [x] 4.5 Implement retry loop detection — detect Reviewer→Executor back-edges, inject retry_count guard and max_retries enforcement
-- [ ] 4.6 Implement `AgentNodeFactory` with registration interface [EXTENSIBLE]
+- [x] 4.6 Implement `AgentNodeFactory` with registration interface [EXTENSIBLE]
 - [x] 4.7 Implement task state machine — pending → running → waiting_human → completed/failed transitions
 
 ## 5. Backend — API & WebSocket Layer
@@ -39,28 +39,28 @@
 - [x] 5.2 Implement REST router `/api/tasks` — create task from workflow, list, detail
 - [x] 5.3 Implement `POST /api/tasks/{id}/human-decision` — accept decision, inject state, resume graph
 - [x] 5.4 Implement `GET /api/tasks/{id}/audit` — aggregate node_executions + human_decisions
-- [ ] 5.5 Implement WebSocket handler `ws/tasks/{task_id}` — subscribe to Redis channel, forward events per design D8
+- [x] 5.5 Implement WebSocket handler `ws/tasks/{task_id}` — subscribe to Redis channel, forward events per design D8
 - [x] 5.6 Implement API Key middleware — validate X-API-Key header against `.env` config
 - [x] 5.7 Add request/response Pydantic models and auto-generate OpenAPI docs
 
 ## 6. Backend — Human-in-the-Loop Flow
 
-- [ ] 6.1 Implement Reviewer node interrupt — detect `human_confirm=true`, call `interrupt()`, persist checkpoint
-- [ ] 6.2 Implement WebSocket notification — push `review_pending` event with execution context to frontend
-- [ ] 6.3 Implement state injection on decision — set review_decision + human_input, resume from checkpoint
-- [ ] 6.4 Implement simulated review mode — auto-generate random decision when `ENABLE_SIMULATED_REVIEW=true`
-- [ ] 6.5 Write integration test: full cycle plan→exec→review(human_confirm)→decision→resume→end
+- [x] 6.1 Implement Reviewer node interrupt — detect `human_confirm=true`, call `interrupt()`, persist checkpoint
+- [x] 6.2 Implement WebSocket notification — push `review_pending` event with execution context to frontend
+- [x] 6.3 Implement state injection on decision — set review_decision + human_input, resume from checkpoint
+- [x] 6.4 Implement simulated review mode — auto-generate random decision when `ENABLE_SIMULATED_REVIEW=true`
+- [x] 6.5 Write integration test: full cycle plan→exec→review(human_confirm)→decision→resume→end
 
 ## 7. MCP Tool Ecosystem
 
-- [ ] 7.1 Implement MCP client connection manager — connect to configured servers at engine startup, auto-reconnect
-- [ ] 7.2 Implement tool registration — call `tools/list`, wrap each tool as LangChain Tool object
-- [ ] 7.3 Implement tool invocation bridge — LangChain Tool → MCP `tools/call` → result → ToolMessage
-- [ ] 7.4 [P] Implement `search-server` in `tools/search-server/` — Docker container with Tavily Search MCP server
-- [ ] 7.5 [P] Implement `code-sandbox` in `tools/code-sandbox/` — Docker container with isolated Python execution MCP server
-- [ ] 7.6 [P] Implement `http-client` in `tools/http-client/` — Docker container with HTTP request MCP server
-- [ ] 7.7 Create Dockerfiles and configuration for all three MCP tool servers
-- [ ] 7.8 Create MCP server development template and documentation [EXTENSIBLE]
+- [x] 7.1 Implement MCP client connection manager — connect to configured servers at engine startup, auto-reconnect
+- [x] 7.2 Implement tool registration — call `tools/list`, wrap each tool as LangChain Tool object
+- [x] 7.3 Implement tool invocation bridge — LangChain Tool → MCP `tools/call` → result → ToolMessage
+- [x] 7.4 [P] Implement `search-server` in `tools/search-server/` — Docker container with Tavily Search MCP server
+- [x] 7.5 [P] Implement `code-sandbox` in `tools/code-sandbox/` — Docker container with isolated Python execution MCP server
+- [x] 7.6 [P] Implement `http-client` in `tools/http-client/` — Docker container with HTTP request MCP server
+- [x] 7.7 Create Dockerfiles and configuration for all three MCP tool servers
+- [x] 7.8 Create MCP server development template and documentation [EXTENSIBLE]
 
 ## 8. Frontend — Project Setup & Canvas
 
@@ -74,7 +74,7 @@
 ## 9. Frontend — Editor Interaction
 
 - [x] 9.1 Implement node properties panel — context-sensitive configuration per node type (tools binding, human_confirm toggle, tool_name selection)
-- [ ] 9.2 Implement conditional edge editor — simple mode (field/op/value dropdowns) and advanced mode (Python lambda textarea)
+- [x] 9.2 Implement conditional edge editor — simple mode (field/op/value dropdowns) and advanced mode (Python lambda textarea)
 - [x] 9.3 Implement canvas serialization — export workflow JSON
 - [x] 9.4 Implement canvas deserialization — import/load workflow JSON, reconstruct nodes and edges
 - [x] 9.5 Implement toolbar — Save, Export JSON, Import JSON, Run, Undo/Redo (Ctrl+Z/Y)
@@ -98,17 +98,17 @@
 
 ## 12. CLI & Deployment
 
-- [ ] 12.1 Create `cli/` project scaffold with Click/Typer framework
-- [ ] 12.2 Implement `agent-flow init` — scaffold project directory with `.env.example`, `docker-compose.yml`, `examples/`
-- [ ] 12.3 Implement `agent-flow dev` — start frontend Vite + backend FastAPI + PostgreSQL/Redis containers, dependency check
-- [ ] 12.4 Implement `agent-flow test <workflow.json>` — load workflow, execute in simulated mode, print results
+- [x] 12.1 Create `cli/` project scaffold with Click/Typer framework
+- [x] 12.2 Implement `agent-flow init` — scaffold project directory with `.env.example`, `docker-compose.yml`, `examples/`
+- [x] 12.3 Implement `agent-flow dev` — start frontend Vite + backend FastAPI + PostgreSQL/Redis containers, dependency check
+- [x] 12.4 Implement `agent-flow test <workflow.json>` — load workflow, execute in simulated mode, print results
 - [x] 12.5 Create `docker-compose.yml` — orchestrate all 6 services (API, engine, PostgreSQL, Redis, search-server, code-sandbox, nginx)
 - [x] 12.6 Create Nginx config — serve frontend static files, proxy `/api` and `/ws` to backend
 
 ## 13. Examples & Documentation
 
 - [x] 13.1 [P] Create example workflow \"Daily AI News Briefing\" — Planner → Executor(search) → Reviewer
-- [ ] 13.2 [P] Create example workflow "Code Review Assistant" — Planner → Executor(code_sandbox) → Reviewer(human_confirm)
+- [x] 13.2 [P] Create example workflow "Code Review Assistant" — Planner → Executor(code_sandbox) → Reviewer(human_confirm)
 - [ ] 13.3 Write OpenAPI / Swagger API documentation annotations on all endpoints
 - [ ] 13.4 Write MCP tool server development guide
 - [ ] 13.5 Write user guide — workflow editor usage, task execution, human review flow

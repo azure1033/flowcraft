@@ -10,15 +10,7 @@ from typing import Any, Callable, Dict, List
 from langgraph.graph import StateGraph, END
 
 from .state import AgentState
-from .agents import planner_agent, executor_agent, reviewer_agent
-
-
-# Node type → agent function mapping
-NODE_FACTORY: Dict[str, Callable] = {
-    "planner": planner_agent,
-    "executor": executor_agent,
-    "reviewer": reviewer_agent,
-}
+from .factory import AgentNodeFactory
 
 
 class GraphCompiler:
@@ -32,19 +24,10 @@ class GraphCompiler:
 
     def __init__(self, max_retries_default: int = 3):
         self.max_retries_default = max_retries_default
+        self._factory = AgentNodeFactory.get_instance()
 
     def compile(self, workflow: dict) -> Any:
-        """Compile workflow JSON into executable StateGraph.
-
-        Args:
-            workflow: Dict with 'nodes' and 'edges' arrays.
-
-        Returns:
-            Compiled LangGraph StateGraph (Runnable).
-
-        Raises:
-            ValueError: If workflow structure is invalid.
-        """
+        """Compile workflow JSON into executable StateGraph."""
         nodes = workflow.get("nodes", [])
         edges = workflow.get("edges", [])
 
@@ -53,22 +36,28 @@ class GraphCompiler:
         if not edges:
             raise ValueError("Workflow must contain at least one edge.")
 
-        # Build StateGraph
         builder = StateGraph(AgentState)
 
-        # Register nodes
+        # Register nodes via factory
         entry_point = nodes[0]["id"]
         for node in nodes:
             node_id = node["id"]
             node_type = node["type"]
 
-            if node_type not in NODE_FACTORY:
+            # Build kwargs for factory
+            kwargs = {}
+            if node_type == "tool":
+                kwargs["tool_name"] = node.get("tool_name", "unknown")
+
+            try:
+                node_fn = self._factory.create(node_type, **kwargs)
+            except ValueError as e:
                 raise ValueError(
                     f"Unknown node type '{node_type}' for node '{node_id}'. "
-                    f"Supported types: {list(NODE_FACTORY.keys())}"
-                )
+                    f"Registered: {self._factory.list_types()}"
+                ) from e
 
-            builder.add_node(node_id, NODE_FACTORY[node_type])
+            builder.add_node(node_id, node_fn)
 
         builder.set_entry_point(entry_point)
 
@@ -79,44 +68,59 @@ class GraphCompiler:
             source = edge["source"]
             target = edge["target"]
             condition = edge.get("condition")
+            expression = edge.get("expression")  # [TENTATIVE] advanced mode
 
-            if condition:
-                cond_fn = self._compile_condition(condition)
-                # Check if this is a retry loop edge
+            if condition or expression:
+                cond_fn = self._compile_condition(condition, expression)
                 if edge in retry_edges:
-                    max_retries = edge.get("loop", {}).get("max_retries", self.max_retries_default)
+                    max_retries = edge.get("loop", {}).get(
+                        "max_retries", self.max_retries_default
+                    )
                     cond_fn = self._wrap_retry_guard(cond_fn, max_retries, target)
 
-                routing = {"true": target, "false": self._resolve_false_target(source, target, edges)}
+                routing = {
+                    "true": target,
+                    "false": self._resolve_false_target(source, target, edges),
+                }
                 builder.add_conditional_edges(source, cond_fn, routing)
             else:
                 builder.add_edge(source, target)
 
-        # Compile with in-memory checkpointer (MVP — PostgreSQL checkpointing later)
         from langgraph.checkpoint.memory import MemorySaver
+
         return builder.compile(checkpointer=MemorySaver())
 
-    def _detect_retry_edges(self, edges: List[dict], nodes: List[dict]) -> List[dict]:
-        """Detect Reviewer→Executor back-edges that form retry loops.
+    # ── Condition Compilation (simple + advanced) ────
 
-        Only Reviewer→Executor edges with conditions are treated as retry loops.
+    def _compile_condition(
+        self, condition: dict | None, expression: str | None = None
+    ) -> Callable:
+        """Compile a condition into a routing function.
+
+        Supports two modes:
+        - Simple: {field, op, value} → comparison lambda
+        - Advanced: Python expression → RestrictedPython sandbox [TENTATIVE]
         """
-        node_types = {n["id"]: n["type"] for n in nodes}
-        retry_edges = []
+        # Advanced mode: RestrictedPython sandbox
+        if expression:
+            from .sandbox import execute_sandbox, SandboxError
 
-        for edge in edges:
-            source_type = node_types.get(edge["source"], "")
-            target_type = node_types.get(edge["target"], "")
-            if source_type == "reviewer" and target_type == "executor" and edge.get("condition"):
-                retry_edges.append(edge)
+            def advanced_cond(state: AgentState) -> str:
+                try:
+                    result = execute_sandbox(expression, dict(state))
+                    return "true" if result else "false"
+                except SandboxError as e:
+                    print(f"  ⚠ Sandbox error: {e}. Routing to false.")
+                    return "false"
 
-        return retry_edges
+            return advanced_cond
 
-    def _compile_condition(self, condition: dict) -> Callable:
-        """Compile a simple condition {field, op, value} into a routing function.
+        # Simple mode: {field, op, value}
+        if not condition:
+            raise ValueError(
+                "Condition must have either 'condition' or 'expression' field."
+            )
 
-        Returns a function that takes AgentState and returns "true" or "false".
-        """
         field = condition["field"]
         op = condition["op"]
         value = condition["value"]
@@ -131,36 +135,45 @@ class GraphCompiler:
         }
 
         if op not in ops:
-            raise ValueError(f"Unsupported operator '{op}'. Supported: {list(ops.keys())}")
+            raise ValueError(
+                f"Unsupported operator '{op}'. Supported: {list(ops.keys())}"
+            )
 
         comparator = ops[op]
 
-        def cond_fn(state: AgentState) -> str:
+        def simple_cond(state: AgentState) -> str:
             actual = state.get(field)
             result = comparator(actual, value)
             return "true" if result else "false"
 
-        return cond_fn
+        return simple_cond
+
+    # ── Retry Loop Detection ────
+
+    def _detect_retry_edges(self, edges: List[dict], nodes: List[dict]) -> List[dict]:
+        node_types = {n["id"]: n["type"] for n in nodes}
+        retry_edges = []
+        for edge in edges:
+            st = node_types.get(edge["source"], "")
+            tt = node_types.get(edge["target"], "")
+            if (
+                st == "reviewer"
+                and tt == "executor"
+                and (edge.get("condition") or edge.get("expression"))
+            ):
+                retry_edges.append(edge)
+        return retry_edges
 
     def _wrap_retry_guard(
         self, cond_fn: Callable, max_retries: int, retry_target: str
     ) -> Callable:
-        """Wrap a condition function with retry count enforcement.
-
-        When retry_count >= max_retries, forces routing to __end__ regardless
-        of the original condition result.
-        """
         def guarded_cond(state: AgentState) -> str:
             retry_count = state.get("retry_count", 0)
-
             if retry_count >= max_retries:
                 print(f"  ⚠ Max retries ({max_retries}) exceeded. Forcing termination.")
-                return "false"  # Routes to __end__ via false target
-
-            # Increment retry count
+                return "false"
             state["retry_count"] = retry_count + 1
             print(f"  ↻ Retry {state['retry_count']}/{max_retries}")
-
             return cond_fn(state)
 
         return guarded_cond
@@ -168,13 +181,11 @@ class GraphCompiler:
     def _resolve_false_target(
         self, source: str, true_target: str, edges: List[dict]
     ) -> str:
-        """Find the 'false' routing target for conditional edges.
-
-        Searches for another edge from the same source with a different condition
-        to serve as the 'else' branch. Falls back to END if none found.
-        """
         for edge in edges:
-            if edge["source"] == source and edge["target"] != true_target and edge.get("condition"):
+            if (
+                edge["source"] == source
+                and edge["target"] != true_target
+                and (edge.get("condition") or edge.get("expression"))
+            ):
                 return edge["target"]
-
         return END

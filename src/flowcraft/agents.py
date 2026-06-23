@@ -18,6 +18,7 @@ load_dotenv()
 
 # --- LLM Factory ---
 
+
 def _get_llm(model_override: str | None = None) -> ChatOpenAI:
     """Create ChatOpenAI instance from environment config.
 
@@ -55,20 +56,29 @@ def planner_agent(state: AgentState) -> Dict[str, Any]:
     """
     task = state.get("task", "")
     if not task:
-        task = str(state.get("messages", [HumanMessage(content="No task provided")])[-1].content)
+        task = str(
+            state.get("messages", [HumanMessage(content="No task provided")])[
+                -1
+            ].content
+        )
 
     llm = _get_llm()
-    response = llm.invoke([
-        SystemMessage(content=PLANNER_SYSTEM_PROMPT),
-        HumanMessage(content=f"Decompose this task into steps:\n\n{task}")
-    ])
+    response = llm.invoke(
+        [
+            SystemMessage(content=PLANNER_SYSTEM_PROMPT),
+            HumanMessage(content=f"Decompose this task into steps:\n\n{task}"),
+        ]
+    )
 
     # Parse JSON from response
     try:
         plan = json.loads(response.content)
     except json.JSONDecodeError:
         # Fallback: wrap raw response
-        plan = {"steps": [response.content], "reasoning": "Direct response (JSON parse failed)"}
+        plan = {
+            "steps": [response.content],
+            "reasoning": "Direct response (JSON parse failed)",
+        }
 
     return {
         "plan": plan,
@@ -106,16 +116,22 @@ def executor_agent(state: AgentState) -> Dict[str, Any]:
     step_description = steps[current_step]
 
     llm = _get_llm()
-    response = llm.invoke([
-        SystemMessage(content=EXECUTOR_SYSTEM_PROMPT),
-        HumanMessage(content=f"Original task: {state.get('task', 'N/A')}\n\n"
-                             f"Plan so far: {json.dumps(plan, ensure_ascii=False)}\n\n"
-                             f"Execute step {current_step + 1}/{len(steps)}: {step_description}")
-    ])
+    response = llm.invoke(
+        [
+            SystemMessage(content=EXECUTOR_SYSTEM_PROMPT),
+            HumanMessage(
+                content=f"Original task: {state.get('task', 'N/A')}\n\n"
+                f"Plan so far: {json.dumps(plan, ensure_ascii=False)}\n\n"
+                f"Execute step {current_step + 1}/{len(steps)}: {step_description}"
+            ),
+        ]
+    )
 
     try:
         result = json.loads(response.content)
-        exec_summary = f"[Step {current_step + 1}] {result.get('step_completed', 'Done')}\n"
+        exec_summary = (
+            f"[Step {current_step + 1}] {result.get('step_completed', 'Done')}\n"
+        )
         exec_summary += f"Result: {result.get('result', response.content)}"
     except json.JSONDecodeError:
         exec_summary = response.content
@@ -153,12 +169,16 @@ def reviewer_agent(state: AgentState) -> Dict[str, Any]:
     exec_output = state.get("exec_output", "")
 
     llm = _get_llm()
-    response = llm.invoke([
-        SystemMessage(content=REVIEWER_SYSTEM_PROMPT),
-        HumanMessage(content=f"Original task: {task}\n\n"
-                             f"Execution result:\n{exec_output}\n\n"
-                             f"Review this execution. Approve or reject with detailed feedback.")
-    ])
+    response = llm.invoke(
+        [
+            SystemMessage(content=REVIEWER_SYSTEM_PROMPT),
+            HumanMessage(
+                content=f"Original task: {task}\n\n"
+                f"Execution result:\n{exec_output}\n\n"
+                f"Review this execution. Approve or reject with detailed feedback."
+            ),
+        ]
+    )
 
     try:
         review = json.loads(response.content)
@@ -170,5 +190,48 @@ def reviewer_agent(state: AgentState) -> Dict[str, Any]:
 
     return {
         "review_decision": decision,
+        "messages": [response],
+    }
+
+
+# --- Tool Executor ---
+
+
+def tool_executor(state: AgentState, tool_name: str = "unknown") -> Dict[str, Any]:
+    """Execute a named tool directly (standalone tool node).
+
+    Unlike the executor_agent which chooses tools dynamically, this node
+    executes a pre-configured tool. The tool_name comes from node metadata.
+
+    In MVP mode without real MCP servers, falls back to LLM-simulated
+    tool execution that describes what the tool would do.
+    """
+    task = state.get("task", "")
+    exec_output = state.get("exec_output", "")
+
+    llm = _get_llm()
+    response = llm.invoke(
+        [
+            SystemMessage(
+                content=(
+                    f"You are simulating the '{tool_name}' tool. "
+                    "Describe what this tool would return if it were invoked with the given input. "
+                    'Output ONLY valid JSON: {{"tool": "<name>", "result": "<simulated result>"}}'
+                )
+            ),
+            HumanMessage(
+                content=f"Tool: {tool_name}\nTask: {task}\nContext: {exec_output}"
+            ),
+        ]
+    )
+
+    try:
+        result = json.loads(response.content)
+        output = f"[{tool_name}] {result.get('result', response.content)}"
+    except json.JSONDecodeError:
+        output = f"[{tool_name}] {response.content}"
+
+    return {
+        "exec_output": output,
         "messages": [response],
     }

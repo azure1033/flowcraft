@@ -16,7 +16,7 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { nodeTypes } from './nodes';
-import type { NodeType, WorkflowEdge } from '../types/workflow';
+import type { NodeType, WorkflowEdge, ConditionOp } from '../types/workflow';
 import { useWorkflowStore } from '../stores/workflowStore';
 
 const rfNode = (id: string, type: NodeType, x: number, y: number, data?: Record<string, unknown>): Node => ({
@@ -103,6 +103,24 @@ function CanvasInner() {
 
   const onPaneClick = useCallback(() => selectNode(null), [selectNode]);
 
+  const onEdgeClick = useCallback(
+    (_: React.MouseEvent, edge: Edge) => {
+      const field = prompt("Condition field (e.g. review_decision):", "");
+      if (!field) return;
+      const op = prompt("Operator (==, !=, >, <, >=, <=):", "==");
+      if (!op) return;
+      const val = prompt("Value:", "approved");
+      if (val === null) return;
+
+      const boolVal = val === "true" ? true : val === "false" ? false : isNaN(Number(val)) ? val : Number(val);
+
+      store.updateEdge(edge.source, edge.target, {
+        condition: { field, op: op as ConditionOp, value: boolVal },
+      } as Partial<WorkflowEdge>);
+    },
+    [store]
+  );
+
   return (
     <ReactFlow
       nodes={rfNodes}
@@ -111,6 +129,7 @@ function CanvasInner() {
       onDragOver={onDragOver}
       onDrop={onDrop}
       onNodeClick={onNodeClick}
+      onEdgeClick={onEdgeClick}
       onPaneClick={onPaneClick}
       nodeTypes={nodeTypes}
       fitView
